@@ -3,6 +3,7 @@ package com.locbot;
 import android.*;
 import android.Manifest;
 import android.app.Fragment;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
@@ -19,11 +20,16 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
+import android.view.DragEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -60,6 +66,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
@@ -68,19 +75,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private FusedLocationProviderApi locationProvider = LocationServices.FusedLocationApi;
     private GoogleApiClient googleApiClient;
     private LocationRequest locationRequest;
-    Button shareLocation, onlineStatus;
-    TextView latValue, longValue;
+    Button shareLocation, btn_shareLocation;
+    TextView sharedFriend;
     public static double latVal, longVal, friendsLatiValue, friendsLongiValue;
     SingleTonUser singleTonUser;
     GoogleMap gMap;
+    String friendsName, friendsNumber;
 
     private void init() {
         FirebaseApp.initializeApp(this);
         shareLocation = (Button) findViewById(R.id.shareLocation);
-        onlineStatus = (Button) findViewById(R.id.onlineStatus);
+        btn_shareLocation = (Button) findViewById(R.id.shareLocation);
         /*latValue = (TextView) findViewById(R.id.latValue);
         longValue = (TextView) findViewById(R.id.longValue);*/
         singleTonUser = SingleTonUser.getInstance();
+        sharedFriend = (TextView)findViewById(R.id.sharedFriend);
     }
 
     @Override
@@ -104,6 +113,49 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         SupportMapFragment supportMapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         supportMapFragment.getMapAsync(this);
 
+        btn_shareLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent it = new Intent(getApplicationContext(), ContactList.class);
+                startActivityForResult(it, 1);
+            }
+        });
+
+    }
+
+    static boolean stopLocationSharing = false;
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        // Song dedicate //
+        if (requestCode == 1) {
+            if (resultCode == RESULT_OK) {
+                String fromUser = singleTonUser.getMobileNumber();
+                final String contactNameAndNumber = data.getStringExtra("selectedContact");
+                String toUserNumber = contactNameAndNumber.split("\\n")[1];
+                String toUserName = contactNameAndNumber.split("\\n")[0];
+                Log.e("assdd", toUserName+" "+toUserNumber);
+
+                friendsName = toUserName;
+                friendsNumber = toUserNumber;
+
+                SwitchCompat sc = (SwitchCompat) findViewById(R.id.sharingStatus);
+                sc.setChecked(true);
+                sc.setEnabled(true);
+                sharedFriend.setText(friendsName);
+
+                sc.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                            if(!isChecked) {
+                                Toast.makeText(getApplicationContext(), "!!_You stopped location sharing_!!", Toast.LENGTH_SHORT).show();
+                                stopLocationSharing = true;
+                            }
+                    }
+                });
+                liveFriendLocationDetection(toUserNumber);
+                friendAlive = true;
+            }
+        }
     }
 
     @Override
@@ -112,22 +164,38 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void requestLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                Log.e("Start_Permission", "Asking Permission as not yet asked...");
-                int fineLocationPermission = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-                int coarseLocationPermission = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-                if (fineLocationPermission != PackageManager.PERMISSION_GRANTED &&
-                        coarseLocationPermission != PackageManager.PERMISSION_GRANTED
-                        ) { // Ask for the permissions if any of the permissions not given yet..
-                    requestPermissions(new String[]{
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION,
-                    }, 101);
-                }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED
+                )
+        {
+            Log.e("Start_Permission", "Asking Permission as not yet asked...");
+            int fineLocationPermission = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+            int coarseLocationPermission = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+            int contactsWPermssion = checkSelfPermission(Manifest.permission.WRITE_CONTACTS);
+            int contactsRPermssion = checkSelfPermission(Manifest.permission.READ_CONTACTS);
+            if (fineLocationPermission != PackageManager.PERMISSION_GRANTED &&
+                    coarseLocationPermission != PackageManager.PERMISSION_GRANTED &&
+                    contactsWPermssion != PackageManager.PERMISSION_GRANTED &&
+                    contactsRPermssion != PackageManager.PERMISSION_GRANTED
+                    ) { // Ask for the permissions if any of the permissions not given yet..
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.WRITE_CONTACTS,
+                        Manifest.permission.READ_CONTACTS,
+                }, 101);
             }
-        } else {
+        }
+        else {
             Log.e("yayyy", "Permission once given..");
+            HashMap<String, String> allContacts = ContactList.getContactNames(this.getContentResolver());
+            AllAppData.setAllContacts(allContacts);
+            Log.e("allCCC", allContacts.toString());
+            // Contacts Reading done, set button VISIBLE...
+            btn_shareLocation.setVisibility(View.VISIBLE);
             LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
             gMap.setMyLocationEnabled(true);
         }
@@ -158,7 +226,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.e("Heyyy", "Got called");
         latVal = location.getLatitude();
         longVal = location.getLongitude();
-        writeTheChangeOnCloudDB(latVal, longVal);
+
+        if(!stopLocationSharing)
+            writeTheChangeOnCloudDB(latVal, longVal);
+        else
+            resetSharingValuesOnCloud(singleTonUser.getMobileNumber(), friendsNumber);
+
         this.onMapReady(gMap);
     }
 
@@ -166,9 +239,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onStart() {
         super.onStart();
         googleApiClient.connect();
-        setUserOnline();
     }
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -176,21 +247,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             requestLocationUpdates();
         }
     }
-
     @Override
     protected void onPause() {
         super.onPause();
-        //LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
-    }
-
-    private void setUserOnline() {
-        onlineStatus.setTextColor(Color.parseColor("#00FF00"));
-        onlineStatus.setText("[LIVE]");
-    }
-
-    private void setUserOffline() {
-        onlineStatus.setTextColor(Color.parseColor("#D32F2F"));
-        onlineStatus.setText("[OFFLINE]");
+        LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
     }
 
     private MarkerOptions friendsMarker;
@@ -205,7 +265,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if(friendAlive) {
             friendCoordinates = new LatLng(latVal + 0.0021, longVal + 0.00021);
-            friendsMarker = new MarkerOptions().position(friendCoordinates).title("FRIEND").visible(true);
+            friendsMarker = new MarkerOptions().position(friendCoordinates).title(friendsName).visible(true);
 
             friendsMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_friend));
             friendsMarker.position(friendCoordinates);
@@ -219,6 +279,81 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         else {
             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latVal, longVal), 16.0f));
         }
+    }
+
+    private void resetSharingValuesOnCloud(String myMobileNumber, String friendsMobileNumber){
+        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+        DatabaseReference meSharingToFriend = firebaseDatabase.getReference().child("requests").child(myMobileNumber).child(friendsMobileNumber);
+        DatabaseReference friendSharingToMe = firebaseDatabase.getReference().child("requests").child(friendsMobileNumber).child(myMobileNumber);
+        meSharingToFriend.setValue(0);
+        friendSharingToMe.setValue(0);
+    }
+
+    public void monitorLocationShareRequests() {
+        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+        final DatabaseReference meSharingToFriend = firebaseDatabase.getReference().child("requests").child(singleTonUser.getMobileNumber()).child("from");
+        meSharingToFriend.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                int value = dataSnapshot.getValue(Integer.class);
+                if(value != -1) {
+                    // Check if app is foregroudn or background and generate alert based on that
+                    // if(approved)
+                    // Set the value as the mobile number of friend.
+                    //else
+                    //  meSharingToFriend.setValue(-1);
+                }
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+    }
+
+    public void liveFriendLocationDetection(String friendMobileNumber) {
+        Log.e("FRNDMOBNO", friendMobileNumber);
+        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+        DatabaseReference liveLocLatiRef = firebaseDatabase.getReference().child("users").child(friendMobileNumber).child("latiValue");
+        DatabaseReference liveLocLongiRef = firebaseDatabase.getReference().child("users").child(friendMobileNumber).child("longiValue");
+
+        liveLocLatiRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                double latiValue = dataSnapshot.getValue(Double.class);
+                Log.e("MA_lati", ""+latiValue);
+                onMapReady(gMap);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+        liveLocLongiRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                double longiValue = dataSnapshot.getValue(Double.class);
+                Log.e("MA_longi", ""+longiValue);
+                onMapReady(gMap);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    public void writeTheChangeOnCloudDB(double latiVal, double longiVal) {
+        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+        DatabaseReference liveLocLatiRef = firebaseDatabase.getReference().child("users").child(singleTonUser.getMobileNumber()).child("latiValue");
+        DatabaseReference liveLocLongiRef = firebaseDatabase.getReference().child("users").child(singleTonUser.getMobileNumber()).child("longiValue");
+
+        liveLocLatiRef.setValue(latiVal);
+        liveLocLongiRef.setValue(longiVal);
     }
 
     public void getDirections(LatLng origin, LatLng dest) {
@@ -368,49 +503,5 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 // Drawing polyline in the Google Map for the i-th route
             gMap.addPolyline(lineOptions);
         }
-    }
-
-    private void sharingStartedSoStartTheListener(String friendMobileNumber){
-        liveFriendLocationDetection(friendMobileNumber);
-    }
-
-    public void liveFriendLocationDetection(String friendMobileNumber) {
-        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
-        DatabaseReference liveLocLatiRef = firebaseDatabase.getReference().child(friendMobileNumber).child("latiValue");
-        DatabaseReference liveLocLongiRef = firebaseDatabase.getReference().child(friendMobileNumber).child("longiValue");
-
-        liveLocLatiRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                onMapReady(gMap);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-
-        liveLocLongiRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                onMapReady(gMap);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-    }
-
-    public void writeTheChangeOnCloudDB(double latiVal, double longiVal) {
-        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
-        DatabaseReference liveLocLatiRef = firebaseDatabase.getReference().child("users").child(singleTonUser.getMobileNumber()).child("latiValue");
-        DatabaseReference liveLocLongiRef = firebaseDatabase.getReference().child("users").child(singleTonUser.getMobileNumber()).child("longiValue");
-
-        liveLocLatiRef.setValue(latiVal);
-        liveLocLongiRef.setValue(longiVal);
-
     }
 }

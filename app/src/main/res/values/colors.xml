@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimary">#7a88d5</color>
     <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorAccent">#f7d5d4</color>
+    <color name="FBtn_genericMood">#fff45e</color>
+    <color name="black">#000000</color>
+    <color name="white">#ffffff</color>
+    <color name="light_yellow">#f2f2b8</color>
+    <color name="light_beguni">#efd1f3</color>
+    <color name="deep_orange">#ee0b16</color>
+    <color name="little_deep_orange">#FF5733</color>
+    <color name="notification_you">#cd63df</color>
+    <color name="appcolor_backup3">#b0bec5</color>
+    <color name="appcolor_backup2">#ffddfc</color>
+    <color name="appcolor_backup1">#3dceaf</color>
+    <color name="appcolor">#e0e0e0</color>
+    <color name="story_color">#626263</color>
+    <color name="story_bg">#f2f2b8</color>
+    <color name="seekbar_bg">#51525b</color>
+    <color name="gm_mp_bg1">#e74c3c</color>
+    <color name="gm_mp_bg">#51525b</color>
+
+    <color name="black_overlay">#66000000</color>
 </resources>

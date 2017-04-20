@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.locbot.ContactList">
+    <LinearLayout
+        android:id="@+id/headerContactList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select contact to dedicate:"
+            android:textStyle="normal|bold"
+            android:textSize="18sp"
+            android:paddingBottom="15dp"
+            android:paddingTop="15dp"
+
+            android:gravity="center_horizontal"
+            android:background="@color/black"
+            android:fontFamily="monospace"
+            android:textColor="@color/appcolor" />
+    </LinearLayout>
+    <ListView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/contactlist"
+        android:layout_below="@id/headerContactList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+</RelativeLayout>
