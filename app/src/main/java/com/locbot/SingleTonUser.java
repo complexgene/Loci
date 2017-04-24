@@ -10,7 +10,7 @@ public class SingleTonUser {
     private static SingleTonUser singleTonUser;
 
     private  SingleTonUser(){
-        mobileNumber = ("9620332800");
+
     }
 
     public static SingleTonUser getInstance(){

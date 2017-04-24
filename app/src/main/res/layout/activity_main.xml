@@ -66,27 +66,20 @@
             </LinearLayout>
     </LinearLayout>
     <LinearLayout
+        android:layout_gravity="center"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:background="@color/appcolor_backup3"
         android:layout_height="wrap_content">
-    <TextView
-        android:layout_weight="1"
-        android:id="@+id/latValue"
-        android:gravity="right"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textStyle="bold"
-        android:text="Sharing with : "
-        />
-    <TextView
-        android:id="@+id/sharedFriend"
-        android:layout_weight="1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textStyle="bold"
-        android:text="NONE"
-        />
+        <TextView
+            android:gravity="center"
+            android:layout_weight="1"
+            android:id="@+id/sharingWith"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:text="! Not Sharing !"
+            />
     </LinearLayout>
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"

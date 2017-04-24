@@ -16,4 +16,7 @@ public class AllAppData {
     public static void setAllContacts(HashMap<String, String> allContacts) {
         AllAppData.allContacts = allContacts;
     }
+
+    public static String userName = "uname";
+    public static String userMobileNumber  = "uphno";
 }
